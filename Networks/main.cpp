@@ -6,125 +6,7 @@
 #include <set>
 #include <vector>
 
-class Graph {
-    int num_vert;
-
-public:
-    Graph(int64_t V);
-
-    void ConnectivityProblem();
-
-    void DFS(size_t now, std::vector<size_t> &res);
-
-    void Dijkstra(int s, bool path_2);
-
-    void Preparation();
-
-    void Start();
-
-    std::vector<std::vector<int>> Z;
-    std::vector<std::vector<double>> L;
-    std::vector<int64_t> dist;
-    std::vector<std::vector<std::pair<double, int>>> table;
-    std::vector<bool> visited;
-    std::vector<bool> visited_DFS;
-    std::set<std::pair<int, int>> que;
-    std::vector<int> parents;
-    std::vector<int> path_1;
-    std::vector<int> path_2;
-    double max_lambda;
-    double min_lambda = 1e6;
-};
-
-Graph::Graph(int64_t n) {
-    num_vert = n;
-    dist.resize(n, 1e6);
-    L.resize(n, std::vector<double>(n, 0));
-    Z.resize(n, std::vector<int>(n, 0));
-    table.resize(n);
-    visited.resize(n, false);
-    visited_DFS.resize(n, false);
-    parents.resize(n, 0);
-}
-
-void Graph::Dijkstra(int s, bool path_2) {
-    dist[s] = 0;
-    que.insert({0, s});
-    parents[s] = -1;
-    visited[s] = true;
-    while (!que.empty()) {
-        int v = que.begin()->second;
-        que.erase(que.begin());
-        for (auto &i: table[v]) {
-            if (dist[i.second] > dist[v] + i.first && !visited[i.second] && i.first != 0) {
-                if (path_2 && v == s && i.second == path_1[1]) {
-                    continue;
-                }
-                if (!path_2 || path_2) {
-                    que.erase({dist[i.second], i.second});
-                    dist[i.second] = dist[v] + i.first;
-                    que.insert({dist[i.second], i.second});
-                    parents[i.second] = v;
-                    visited[i.second] = true;
-                }
-            }
-        }
-    }
-}
-
-void Graph::DFS(size_t now, std::vector<size_t> &res) {
-    visited_DFS[now] = true;
-    res.emplace_back(now);
-    for (auto neig: table[now]) {
-        if (!visited_DFS[neig.second]) {
-            DFS(neig.second, res);
-        }
-    }
-}
-
-void Graph::ConnectivityProblem() {
-    std::vector<std::vector<size_t>> components;
-    for (size_t i = 1; i < visited_DFS.size(); ++i) {
-        if (!visited_DFS[i]) {
-            std::vector<size_t> connect_comp;
-            DFS(i, connect_comp);
-            components.emplace_back(connect_comp);
-        }
-    }
-    if (components.size() == 1) {
-        return;
-    }
-    auto vert_1 = components[0][0];
-    auto vert_2 = components[1][0];
-    table[vert_1][0].first = 0;
-    table[vert_1].push_back({1, table[vert_2][0].second});
-    table[vert_2][0].first = 0;
-    table[vert_2].push_back({1, table[vert_1][0].second});
-
-}
-
-void Graph::Preparation() {
-    que.clear();
-    for (size_t i = 0; i < num_vert; ++i) {
-        parents[i] = 0;
-        visited[i] = false;
-        dist[i] = 1e6;
-    }
-
-}
-
-void Graph::Start() {
-    que.clear();
-    path_1.clear();
-    path_2.clear();
-    for (size_t i = 0; i < num_vert; ++i) {
-        parents[i] = 0;
-        visited[i] = false;
-        dist[i] = 1e6;
-    }
-
-}
-
+#include "graph.h"
 
 double Random(double a, double b) {
     return rand() * (b - a) / RAND_MAX + a;
@@ -171,7 +53,7 @@ int DoDijkstra(Graph &g, int s, int t, std::vector<int> &vec, bool path_2) {
     return 0;
 }
 
-void DoFlow(Graph &g, std::vector<int> &path, std::vector<double> &f, int n, double &need_lambda) {
+void DoFlow(std::vector<int> &path, std::vector<double> &f, int n, double &need_lambda) {
     for (size_t i = 0; i < path.size() - 1; ++i) {
         double w;
         if (i != path.size() - 2) {
@@ -252,7 +134,7 @@ int main() {
 
             // we found first short path
             std::vector<double> f(num_arcs, 0);
-            DoFlow(g, g.path_1, f, n, need_lambda);
+            DoFlow(g.path_1, f, n, need_lambda);
             g.Preparation();
 
             if (DoDijkstra(g, s, t, g.path_2, true) == -1) {
@@ -266,7 +148,7 @@ int main() {
             std::vector<double> v(num_arcs, 0);
 
             need_lambda = g.L[s][t];
-            DoFlow(g, g.path_2, v, n, need_lambda);
+            DoFlow(g.path_2, v, n, need_lambda);
 
             double l;
             double F;
